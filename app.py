@@ -36,7 +36,7 @@ def scrape_hitrack():
         }
 
         try:
-            response = requests.get(url, params=params, headers=headers, timeout=20)
+            response = requests.post(url, data=params, headers=headers, timeout=20)
 
             # ✅ Check HTTP response
             if response.status_code != 200:
