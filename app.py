@@ -33,7 +33,7 @@ def scrape_hitrack():
         }
 
         try:
-            response = requests.get(url, params=params, headers=headers)
+            response = requests.get(url, params=params, headers=headers, timeout=20)
 
             # Safe JSON handling
             try:
