@@ -14,8 +14,7 @@ def scrape_hitrack():
     # 👉 Add all your machines here
     machines = {
         "HYNDN635EE0069980": 43261,
-        # "Machine2": 12345,
-        # "Machine3": 67890,
+        # Add more machines below
     }
 
     results = {}
@@ -35,27 +34,41 @@ def scrape_hitrack():
         try:
             response = requests.get(url, params=params, headers=headers, timeout=20)
 
-            # Safe JSON handling
-            try:
-                json_data = response.json() if response.text.startswith("{") else {}
-            except:
+            # ✅ Check HTTP response
+            if response.status_code != 200:
+                results[machine_id] = f"HTTP Error {response.status_code}"
+                continue
+
+            # ✅ Safe JSON parsing
+            if not response.text.startswith("{"):
                 results[machine_id] = "Invalid response (cookie expired?)"
                 continue
 
+            json_data = response.json()
             data = json_data.get("data", [])
 
             if not data:
                 results[machine_id] = "No data"
                 continue
 
-            # Get latest hour meter
+            # ✅ Extract latest hour meter
+            latest_found = False
             for row in reversed(data):
                 hm = row.get("HourMeter")
                 if hm:
-                    h, m = hm.split(":")
-                    results[machine_id] = round(float(h) + float(m)/60, 2)
-                    break
+                    try:
+                        h, m = hm.split(":")
+                        results[machine_id] = round(float(h) + float(m)/60, 2)
+                        latest_found = True
+                        break
+                    except:
+                        continue
 
+            if not latest_found:
+                results[machine_id] = "No valid hour meter"
+
+        except requests.exceptions.Timeout:
+            results[machine_id] = "Timeout"
         except Exception as e:
             results[machine_id] = str(e)
 
