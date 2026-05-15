@@ -1,12 +1,11 @@
 from flask import Flask, jsonify
-import requests
 
-app = Flask(__name__)   # ⭐ THIS IS CRITICAL
-
-def scrape_hitrack():
-    return {"status": "working"}   # temporary test
-
+app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return jsonify(scrape_hitrack())
+    return {"status": "working"}
+
+# VERY IMPORTANT ↓↓↓
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
