@@ -37,7 +37,7 @@ def scrape_hitrack():
 
             # Safe JSON handling
             try:
-                json_data = response.json()
+                json_data = response.json() if response.text.startswith("{") else {}
             except:
                 results[machine_id] = "Invalid response (cookie expired?)"
                 continue
