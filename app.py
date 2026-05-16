@@ -1,6 +1,3 @@
-# HD Fleet Monitor — Final Production App.py
-
-```python
 from flask import Flask, render_template_string
 import requests
 import csv
@@ -496,39 +493,3 @@ def send_alert():
 if __name__ == "__main__":
 
     app.run(host="0.0.0.0", port=10000)
-```
-
-# FINAL STEPS
-
-1. Replace your current app.py with this code
-2. Commit changes to GitHub
-3. Wait for Render deploy
-4. Open your dashboard URL
-5. Click:
-
-```text
-Send Telegram + Email Alert
-```
-
-You should receive:
-
-* Telegram alert
-* Email alert
-
-# IMPORTANT SECURITY NOTE
-
-After testing successfully:
-
-1. Revoke old Gmail App Password
-2. Generate new App Password
-3. Replace EMAIL_PASSWORD in code
-4. Re-deploy
-
-# FUTURE IMPROVEMENTS
-
-* Daily automated alerts at 10 AM
-* Service history tracking
-* Service update button
-* Login/session auto-renewal
-* Multiple Telegram recipients
-* Export PDF/Excel reports
