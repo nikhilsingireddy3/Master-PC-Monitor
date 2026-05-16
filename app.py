@@ -8,6 +8,10 @@ SHEET_ID = "1EW68VrSfyzaD9UBhWORQe63QOwlz9QLfvQBWx1yWjzI"
 app = Flask(__name__)
 
 
+# =========================
+# TELEGRAM ALERT FUNCTION
+# =========================
+
 def send_telegram_message(message):
 
     bot_token = "8926186497:AAFxCR4OjSpIkRLI1EXtAPiS8yPkVZblEvQ"
@@ -23,6 +27,13 @@ def send_telegram_message(message):
 
     requests.post(url, data=payload)
 
+
+# =========================
+# GOOGLE SHEET FUNCTION
+# =========================
+
+def get_sheet_data():
+
     url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv"
 
     response = requests.get(url)
@@ -33,6 +44,10 @@ def send_telegram_message(message):
 
     return list(reader)
 
+
+# =========================
+# HYUNDAI DATA FUNCTION
+# =========================
 
 def scrape_hitrack():
 
@@ -46,7 +61,7 @@ def scrape_hitrack():
         "Referer": "https://hyundai-ce.live/jsp/Templates/MachinePerformanceReport.jsp"
     }
 
-    # Correct Hyundai vehicle mappings
+    # Hyundai Vehicle Mapping
     vehicle_mapping = {
         "HYNDN635EE0069980": 39080,
         "HYNDN635CE0069981": 39081,
@@ -156,7 +171,7 @@ def scrape_hitrack():
 
                 continue
 
-            # Service calculations
+            # Service Logic
             last_service = float(last_service) if last_service else 0
 
             next_service_due = last_service + 500
@@ -166,7 +181,7 @@ def scrape_hitrack():
                 2
             )
 
-            # Status logic
+            # Status Logic
             if remaining_hours <= 0:
                 status = "OVERDUE"
 
@@ -202,7 +217,7 @@ def scrape_hitrack():
                 "Status": str(e)
             })
 
-    # Sort rows by priority
+    # Sort priority
     status_order = {
         "OVERDUE": 0,
         "DUE SOON": 1,
@@ -215,6 +230,10 @@ def scrape_hitrack():
 
     return results
 
+
+# =========================
+# WEB PAGE
+# =========================
 
 @app.route("/")
 def home():
