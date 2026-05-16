@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template_string    
+from flask import Flask, jsonify, render_template_string
 import requests
 import csv
 from io import StringIO
@@ -33,19 +33,19 @@ def scrape_hitrack():
         "Referer": "https://hyundai-ce.live/jsp/Templates/MachinePerformanceReport.jsp"
     }
 
-    # Real machine vehicle IDs
+    # Correct Hyundai vehicle mappings
     vehicle_mapping = {
-    "HYNDN635EE0069980": 39080,
-    "HYNDN635CE0069981": 39081,
-    "HYNDN635VE0071027": 41970,
-    "HYNDN635CE0071026": 41972,
-    "HYNDN635EE0071048": 42004,
-    "HYNDN635CE0071049": 42006,
-    "HYNDE6M4CE0060226": 43261,
-    "HYNDE6M4VE0060227": 43258,
-    "HYNDE6M4AE0060226": 43261,
-    "HYNDE6M4VE0060275": 43391
-}
+        "HYNDN635EE0069980": 39080,
+        "HYNDN635CE0069981": 39081,
+        "HYNDN635VE0071027": 41970,
+        "HYNDN635CE0071026": 41972,
+        "HYNDN635EE0071048": 42004,
+        "HYNDN635CE0071049": 42006,
+        "HYNDE6M4CE0060226": 43261,
+        "HYNDE6M4VE0060227": 43258,
+        "HYNDE6M4AE0060226": 43261,
+        "HYNDE6M4VE0060275": 43391
+    }
 
     sheet_data = get_sheet_data()
 
@@ -55,7 +55,6 @@ def scrape_hitrack():
 
         machine_id = row["Machine ID"]
         pc_no = row["PC No"]
-
         last_service = row["Last Service Done At"]
 
         if machine_id not in vehicle_mapping:
@@ -190,7 +189,8 @@ def scrape_hitrack():
                 "Status": str(e)
             })
 
-        status_order = {
+    # Sort rows by priority
+    status_order = {
         "OVERDUE": 0,
         "DUE SOON": 1,
         "OK": 2
@@ -210,7 +210,9 @@ def home():
 
     html = """
     <html>
+
     <head>
+
         <title>HD Fleet Monitor</title>
 
         <style>
@@ -219,6 +221,10 @@ def home():
                 font-family: Arial;
                 padding: 20px;
                 background-color: #f4f4f4;
+            }
+
+            h2 {
+                margin-bottom: 20px;
             }
 
             table {
@@ -297,6 +303,7 @@ def home():
         </table>
 
     </body>
+
     </html>
     """
 
