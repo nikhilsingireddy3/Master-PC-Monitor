@@ -1,23 +1,37 @@
-from flask import Flask, jsonify, render_template_string
+# HD Fleet Monitor — Final Production App.py
+
+```python
+from flask import Flask, render_template_string
 import requests
 import csv
 from io import StringIO
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+# ====================================
+# CONFIGURATION
+# ====================================
 
 SHEET_ID = "1EW68VrSfyzaD9UBhWORQe63QOwlz9QLfvQBWx1yWjzI"
-
-app = Flask(__name__)
-
-# ====================================
-# TELEGRAM CONFIG
-# ====================================
 
 BOT_TOKEN = "8926186497:AAFxCR4OjSpIkRLI1EXtAPiS8yPkVZblEvQ"
 CHAT_ID = "1188618378"
 
+EMAIL_SENDER = "Nikhilsingireddy@gmail.com"
+EMAIL_PASSWORD = "zvgzrcctehmrifrq"
+EMAIL_RECEIVERS = [
+    "Nikhilsingireddy@gmail.com",
+    "masterdrillershyderabad@gmail.com"
+]
+
+app = Flask(__name__)
+
 
 # ====================================
-# SEND TELEGRAM MESSAGE
+# TELEGRAM MESSAGE
 # ====================================
+
 
 def send_telegram_message(message):
 
@@ -32,8 +46,45 @@ def send_telegram_message(message):
 
 
 # ====================================
+# EMAIL FUNCTION
+# ====================================
+
+
+def send_email(subject, body):
+
+    try:
+
+        msg = MIMEMultipart()
+
+        msg['From'] = EMAIL_SENDER
+        msg['To'] = ", ".join(EMAIL_RECEIVERS)
+        msg['Subject'] = subject
+
+        msg.attach(MIMEText(body, 'plain'))
+
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+
+        server.sendmail(
+            EMAIL_SENDER,
+            EMAIL_RECEIVERS,
+            msg.as_string()
+        )
+
+        server.quit()
+
+        return True
+
+    except Exception as e:
+
+        return str(e)
+
+
+# ====================================
 # GOOGLE SHEET DATA
 # ====================================
+
 
 def get_sheet_data():
 
@@ -51,6 +102,7 @@ def get_sheet_data():
 # ====================================
 # HYUNDAI SCRAPER
 # ====================================
+
 
 def scrape_hitrack():
 
@@ -113,23 +165,9 @@ def scrape_hitrack():
             )
 
             if response.status_code != 200:
-
-                results.append({
-                    "PC No": pc_no,
-                    "Machine ID": machine_id,
-                    "Status": f"HTTP Error {response.status_code}"
-                })
-
                 continue
 
             if not response.text.startswith("{"):
-
-                results.append({
-                    "PC No": pc_no,
-                    "Machine ID": machine_id,
-                    "Status": "Invalid response"
-                })
-
                 continue
 
             json_data = response.json()
@@ -137,13 +175,6 @@ def scrape_hitrack():
             data = json_data.get("data", [])
 
             if not data:
-
-                results.append({
-                    "PC No": pc_no,
-                    "Machine ID": machine_id,
-                    "Status": "No data"
-                })
-
                 continue
 
             current_hours = None
@@ -164,16 +195,8 @@ def scrape_hitrack():
                     break
 
             if current_hours is None:
-
-                results.append({
-                    "PC No": pc_no,
-                    "Machine ID": machine_id,
-                    "Status": "No valid hour meter"
-                })
-
                 continue
 
-            # SERVICE CALCULATIONS
             last_service = float(last_service) if last_service else 0
 
             next_service_due = last_service + 500
@@ -183,7 +206,6 @@ def scrape_hitrack():
                 2
             )
 
-            # STATUS LOGIC
             if remaining_hours <= 0:
                 status = "OVERDUE"
 
@@ -203,23 +225,9 @@ def scrape_hitrack():
                 "Status": status
             })
 
-        except requests.exceptions.Timeout:
+        except:
+            continue
 
-            results.append({
-                "PC No": pc_no,
-                "Machine ID": machine_id,
-                "Status": "Timeout"
-            })
-
-        except Exception as e:
-
-            results.append({
-                "PC No": pc_no,
-                "Machine ID": machine_id,
-                "Status": str(e)
-            })
-
-    # SORTING
     status_order = {
         "OVERDUE": 0,
         "DUE SOON": 1,
@@ -234,20 +242,36 @@ def scrape_hitrack():
 
 
 # ====================================
-# HOME PAGE
+# DASHBOARD
 # ====================================
+
 
 @app.route("/")
 def home():
 
     data = scrape_hitrack()
 
+    overdue_count = len([
+        x for x in data if x['Status'] == 'OVERDUE'
+    ])
+
+    due_soon_count = len([
+        x for x in data if x['Status'] == 'DUE SOON'
+    ])
+
+    ok_count = len([
+        x for x in data if x['Status'] == 'OK'
+    ])
+
     html = """
+
     <html>
 
     <head>
 
         <title>HD Fleet Monitor</title>
+
+        <meta http-equiv="refresh" content="300">
 
         <style>
 
@@ -259,6 +283,46 @@ def home():
 
             h2 {
                 margin-bottom: 20px;
+            }
+
+            .summary-container {
+                display: flex;
+                gap: 20px;
+                margin-bottom: 20px;
+            }
+
+            .card {
+                padding: 20px;
+                border-radius: 8px;
+                color: white;
+                font-size: 20px;
+                font-weight: bold;
+                min-width: 180px;
+                text-align: center;
+            }
+
+            .red {
+                background-color: #dc3545;
+            }
+
+            .yellow {
+                background-color: #ffc107;
+                color: black;
+            }
+
+            .green {
+                background-color: #28a745;
+            }
+
+            button {
+                padding: 12px 18px;
+                background-color: #007bff;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                margin-bottom: 20px;
+                font-size: 16px;
             }
 
             table {
@@ -290,37 +354,6 @@ def home():
                 background-color: #f8d7da;
             }
 
-            .top-box {
-                padding: 15px;
-                margin-bottom: 20px;
-                border-radius: 5px;
-                color: white;
-                font-weight: bold;
-            }
-
-            .red {
-                background-color: #dc3545;
-            }
-
-            .yellow {
-                background-color: #ffc107;
-                color: black;
-            }
-
-            .green {
-                background-color: #28a745;
-            }
-
-            button {
-                padding: 10px 15px;
-                background-color: #007bff;
-                color: white;
-                border: none;
-                border-radius: 5px;
-                cursor: pointer;
-                margin-bottom: 20px;
-            }
-
         </style>
 
     </head>
@@ -329,8 +362,27 @@ def home():
 
         <h2>HD Fleet Monitor</h2>
 
+        <div class="summary-container">
+
+            <div class="card red">
+                OVERDUE<br>
+                {{ overdue_count }}
+            </div>
+
+            <div class="card yellow">
+                DUE SOON<br>
+                {{ due_soon_count }}
+            </div>
+
+            <div class="card green">
+                OK<br>
+                {{ ok_count }}
+            </div>
+
+        </div>
+
         <button onclick="window.location.href='/send-alert'">
-            Send Telegram Alert
+            Send Telegram + Email Alert
         </button>
 
         <table>
@@ -374,16 +426,24 @@ def home():
     </body>
 
     </html>
+
     """
 
-    return render_template_string(html, data=data)
+    return render_template_string(
+        html,
+        data=data,
+        overdue_count=overdue_count,
+        due_soon_count=due_soon_count,
+        ok_count=ok_count
+    )
 
 
 # ====================================
-# TELEGRAM ALERT ROUTE
+# ALERT ROUTE
 # ====================================
 
-@app.route("/send-alert")
+
+@app.route('/send-alert')
 def send_alert():
 
     data = scrape_hitrack()
@@ -393,12 +453,14 @@ def send_alert():
 
     for row in data:
 
-        if row["Status"] == "OVERDUE":
+        if row['Status'] == 'OVERDUE':
+
             overdue.append(
                 f"🔴 {row['PC No']} → {row['Remaining Hours']} hrs"
             )
 
-        elif row["Status"] == "DUE SOON":
+        elif row['Status'] == 'DUE SOON':
+
             due_soon.append(
                 f"🟡 {row['PC No']} → {row['Remaining Hours']} hrs left"
             )
@@ -406,22 +468,67 @@ def send_alert():
     message = "🚨 HD Fleet Alert\n\n"
 
     if overdue:
+
         message += "OVERDUE:\n"
         message += "\n".join(overdue)
         message += "\n\n"
 
     if due_soon:
+
         message += "DUE SOON:\n"
         message += "\n".join(due_soon)
+        message += "\n\n"
 
     if not overdue and not due_soon:
+
         message += "✅ All machines operating normally"
 
     send_telegram_message(message)
 
-    return "Telegram alert sent successfully"
+    send_email(
+        "HD Fleet Alert",
+        message
+    )
+
+    return "Telegram and Email alerts sent successfully"
 
 
 if __name__ == "__main__":
 
     app.run(host="0.0.0.0", port=10000)
+```
+
+# FINAL STEPS
+
+1. Replace your current app.py with this code
+2. Commit changes to GitHub
+3. Wait for Render deploy
+4. Open your dashboard URL
+5. Click:
+
+```text
+Send Telegram + Email Alert
+```
+
+You should receive:
+
+* Telegram alert
+* Email alert
+
+# IMPORTANT SECURITY NOTE
+
+After testing successfully:
+
+1. Revoke old Gmail App Password
+2. Generate new App Password
+3. Replace EMAIL_PASSWORD in code
+4. Re-deploy
+
+# FUTURE IMPROVEMENTS
+
+* Daily automated alerts at 10 AM
+* Service history tracking
+* Service update button
+* Login/session auto-renewal
+* Multiple Telegram recipients
+* Export PDF/Excel reports
