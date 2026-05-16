@@ -29,10 +29,28 @@ def scrape_hitrack():
     }
 
     # 👉 Add all your machines here
-    machines = {
-        "HYNDN635EE0069980": 43261,
-        # Add more machines below
-    }
+     sheet_data = get_sheet_data()
+
+     machines = {}
+
+     vehicle_mapping = {
+    "HYNDN635EE0069980": 43261,
+    "HYNDN635CE0069981": 43262,
+    "HYNDN635VE0071027": 43263,
+    "HYNDN635CE0071026": 43264,
+    "HYNDN635EE0071048": 43265,
+    "HYNDN635CE0071049": 43266,
+    "HYNDE6M4CE0060226": 43267,
+    "HYNDE6M4VE0060227": 43268,
+    "HYNDE6M4AE0060226": 43269,
+    "HYNDE6M4VE0060275": 43270
+}
+
+for row in sheet_data:
+    machine_id = row["Machine ID"]
+
+    if machine_id in vehicle_mapping:
+        machines[machine_id] = vehicle_mapping[machine_id]
 
     results = {}
 
