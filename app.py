@@ -8,7 +8,20 @@ SHEET_ID = "1EW68VrSfyzaD9UBhWORQe63QOwlz9QLfvQBWx1yWjzI"
 app = Flask(__name__)
 
 
-def get_sheet_data():
+def send_telegram_message(message):
+
+    bot_token = "8926186497:AAFxCR4OjSpIkRLI1EXtAPiS8yPkVZblEvQ"
+
+    chat_id = "1188618378"
+
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+
+    payload = {
+        "chat_id": chat_id,
+        "text": message
+    }
+
+    requests.post(url, data=payload)
 
     url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv"
 
