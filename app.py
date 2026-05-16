@@ -7,30 +7,33 @@ SHEET_ID = "1EW68VrSfyzaD9UBhWORQe63QOwlz9QLfvQBWx1yWjzI"
 
 app = Flask(__name__)
 
+# ====================================
+# TELEGRAM CONFIG
+# ====================================
 
-# =========================
-# TELEGRAM ALERT FUNCTION
-# =========================
+BOT_TOKEN = "8926186497:AAFxCR4OjSpIkRLI1EXtAPiS8yPkVZblEvQ"
+CHAT_ID = "1188618378"
+
+
+# ====================================
+# SEND TELEGRAM MESSAGE
+# ====================================
 
 def send_telegram_message(message):
 
-    bot_token = "8926186497:AAFxCR4OjSpIkRLI1EXtAPiS8yPkVZblEvQ"
-
-    chat_id = "1188618378"
-
-    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
     payload = {
-        "chat_id": chat_id,
+        "chat_id": CHAT_ID,
         "text": message
     }
 
     requests.post(url, data=payload)
 
 
-# =========================
-# GOOGLE SHEET FUNCTION
-# =========================
+# ====================================
+# GOOGLE SHEET DATA
+# ====================================
 
 def get_sheet_data():
 
@@ -45,9 +48,9 @@ def get_sheet_data():
     return list(reader)
 
 
-# =========================
-# HYUNDAI DATA FUNCTION
-# =========================
+# ====================================
+# HYUNDAI SCRAPER
+# ====================================
 
 def scrape_hitrack():
 
@@ -61,7 +64,6 @@ def scrape_hitrack():
         "Referer": "https://hyundai-ce.live/jsp/Templates/MachinePerformanceReport.jsp"
     }
 
-    # Hyundai Vehicle Mapping
     vehicle_mapping = {
         "HYNDN635EE0069980": 39080,
         "HYNDN635CE0069981": 39081,
@@ -171,7 +173,7 @@ def scrape_hitrack():
 
                 continue
 
-            # Service Logic
+            # SERVICE CALCULATIONS
             last_service = float(last_service) if last_service else 0
 
             next_service_due = last_service + 500
@@ -181,7 +183,7 @@ def scrape_hitrack():
                 2
             )
 
-            # Status Logic
+            # STATUS LOGIC
             if remaining_hours <= 0:
                 status = "OVERDUE"
 
@@ -217,7 +219,7 @@ def scrape_hitrack():
                 "Status": str(e)
             })
 
-    # Sort priority
+    # SORTING
     status_order = {
         "OVERDUE": 0,
         "DUE SOON": 1,
@@ -231,9 +233,9 @@ def scrape_hitrack():
     return results
 
 
-# =========================
-# WEB PAGE
-# =========================
+# ====================================
+# HOME PAGE
+# ====================================
 
 @app.route("/")
 def home():
@@ -288,6 +290,37 @@ def home():
                 background-color: #f8d7da;
             }
 
+            .top-box {
+                padding: 15px;
+                margin-bottom: 20px;
+                border-radius: 5px;
+                color: white;
+                font-weight: bold;
+            }
+
+            .red {
+                background-color: #dc3545;
+            }
+
+            .yellow {
+                background-color: #ffc107;
+                color: black;
+            }
+
+            .green {
+                background-color: #28a745;
+            }
+
+            button {
+                padding: 10px 15px;
+                background-color: #007bff;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                margin-bottom: 20px;
+            }
+
         </style>
 
     </head>
@@ -295,6 +328,10 @@ def home():
     <body>
 
         <h2>HD Fleet Monitor</h2>
+
+        <button onclick="window.location.href='/send-alert'">
+            Send Telegram Alert
+        </button>
 
         <table>
 
@@ -342,11 +379,49 @@ def home():
     return render_template_string(html, data=data)
 
 
-@app.route("/test-telegram")
-def test_telegram():
+# ====================================
+# TELEGRAM ALERT ROUTE
+# ====================================
 
-    send_telegram_message("✅ HD Fleet Monitor Telegram Alert Working")
+@app.route("/send-alert")
+def send_alert():
 
-    return "Telegram message sent"
+    data = scrape_hitrack()
+
+    overdue = []
+    due_soon = []
+
+    for row in data:
+
+        if row["Status"] == "OVERDUE":
+            overdue.append(
+                f"🔴 {row['PC No']} → {row['Remaining Hours']} hrs"
+            )
+
+        elif row["Status"] == "DUE SOON":
+            due_soon.append(
+                f"🟡 {row['PC No']} → {row['Remaining Hours']} hrs left"
+            )
+
+    message = "🚨 HD Fleet Alert\n\n"
+
+    if overdue:
+        message += "OVERDUE:\n"
+        message += "\n".join(overdue)
+        message += "\n\n"
+
+    if due_soon:
+        message += "DUE SOON:\n"
+        message += "\n".join(due_soon)
+
+    if not overdue and not due_soon:
+        message += "✅ All machines operating normally"
+
+    send_telegram_message(message)
+
+    return "Telegram alert sent successfully"
+
+
+if __name__ == "__main__":
 
     app.run(host="0.0.0.0", port=10000)
