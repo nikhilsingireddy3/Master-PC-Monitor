@@ -342,6 +342,11 @@ def home():
     return render_template_string(html, data=data)
 
 
-if __name__ == "__main__":
+@app.route("/test-telegram")
+def test_telegram():
+
+    send_telegram_message("✅ HD Fleet Monitor Telegram Alert Working")
+
+    return "Telegram message sent"
 
     app.run(host="0.0.0.0", port=10000)
