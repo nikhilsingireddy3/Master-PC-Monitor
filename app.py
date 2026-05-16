@@ -190,6 +190,16 @@ def scrape_hitrack():
                 "Status": str(e)
             })
 
+        status_order = {
+        "OVERDUE": 0,
+        "DUE SOON": 1,
+        "OK": 2
+    }
+
+    results.sort(
+        key=lambda x: status_order.get(x["Status"], 99)
+    )
+
     return results
 
 
