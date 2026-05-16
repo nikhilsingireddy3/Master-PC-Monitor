@@ -3,6 +3,12 @@ import requests
 SHEET_ID = "1EW68VrSfyzaD9UBhWORQe63QOwlz9QLfvQBWx1yWjzI"
 
 app = Flask(__name__)
+def get_sheet_data():
+    url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv"
+
+    response = requests.get(url)
+
+    return response.text
 
 def scrape_hitrack():
     url = "https://hyundai-ce.live/MachinePerformanceReport/MachinePerformanceReportGridView"
@@ -82,7 +88,7 @@ def scrape_hitrack():
 
 @app.route("/")
 def home():
-    return jsonify(scrape_hitrack())
+    return get_sheet_data()
 
 
 # Required for Render
