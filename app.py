@@ -1,5 +1,7 @@
 from flask import Flask, jsonify
 import requests
+import csv
+from io import StringIO
 SHEET_ID = "1EW68VrSfyzaD9UBhWORQe63QOwlz9QLfvQBWx1yWjzI"
 
 app = Flask(__name__)
@@ -8,7 +10,11 @@ def get_sheet_data():
 
     response = requests.get(url)
 
-    return response.text
+    csv_data = response.text
+
+    reader = csv.DictReader(StringIO(csv_data))
+
+    return list(reader)
 
 def scrape_hitrack():
     url = "https://hyundai-ce.live/MachinePerformanceReport/MachinePerformanceReportGridView"
