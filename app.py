@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template_string    
 import requests
 import csv
 from io import StringIO
@@ -196,7 +196,101 @@ def scrape_hitrack():
 @app.route("/")
 def home():
 
-    return jsonify(scrape_hitrack())
+    data = scrape_hitrack()
+
+    html = """
+    <html>
+    <head>
+        <title>HD Fleet Monitor</title>
+
+        <style>
+
+            body {
+                font-family: Arial;
+                padding: 20px;
+                background-color: #f4f4f4;
+            }
+
+            table {
+                border-collapse: collapse;
+                width: 100%;
+                background: white;
+            }
+
+            th, td {
+                border: 1px solid #ddd;
+                padding: 10px;
+                text-align: center;
+            }
+
+            th {
+                background-color: #333;
+                color: white;
+            }
+
+            .OK {
+                background-color: #d4edda;
+            }
+
+            .DUE {
+                background-color: #fff3cd;
+            }
+
+            .OVERDUE {
+                background-color: #f8d7da;
+            }
+
+        </style>
+
+    </head>
+
+    <body>
+
+        <h2>HD Fleet Monitor</h2>
+
+        <table>
+
+            <tr>
+                <th>PC No</th>
+                <th>Machine ID</th>
+                <th>Current Hours</th>
+                <th>Last Service</th>
+                <th>Next Due</th>
+                <th>Remaining</th>
+                <th>Status</th>
+            </tr>
+
+            {% for row in data %}
+
+            <tr class="
+                {% if row['Status'] == 'OVERDUE' %}
+                    OVERDUE
+                {% elif row['Status'] == 'DUE SOON' %}
+                    DUE
+                {% else %}
+                    OK
+                {% endif %}
+            ">
+
+                <td>{{ row['PC No'] }}</td>
+                <td>{{ row['Machine ID'] }}</td>
+                <td>{{ row['Current Hours'] }}</td>
+                <td>{{ row['Last Service Done At'] }}</td>
+                <td>{{ row['Next Service Due'] }}</td>
+                <td>{{ row['Remaining Hours'] }}</td>
+                <td>{{ row['Status'] }}</td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </body>
+    </html>
+    """
+
+    return render_template_string(html, data=data)
 
 
 if __name__ == "__main__":
