@@ -2,10 +2,14 @@ from flask import Flask, jsonify
 import requests
 import csv
 from io import StringIO
+
 SHEET_ID = "1EW68VrSfyzaD9UBhWORQe63QOwlz9QLfvQBWx1yWjzI"
 
 app = Flask(__name__)
+
+
 def get_sheet_data():
+
     url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv"
 
     response = requests.get(url)
@@ -16,45 +20,49 @@ def get_sheet_data():
 
     return list(reader)
 
+
 def scrape_hitrack():
+
     url = "https://hyundai-ce.live/MachinePerformanceReport/MachinePerformanceReportGridView"
 
     headers = {
-    "Cookie": "c1=CnFrwVPQYlTyNH9CMCopuRURz1ZIKC3E1MPTTQQUCVMV4WzasMge7Au/gOSBVK4c; JSESSIONID=08927079469605A37ECA0A67DA3AB556; AWSELB=A1374585027AECE6E1999905DCA119937B811FE2EEC22DE61210FFA4B37CB8D8B77C27C36B3E4EF67688B7B67A37E592CB9C63DF620D0F3F9DFC96FAFB9EF906057FF5D3868F74A5865066DE92B0AD63D58C712AB1",
-    "User-Agent": "Mozilla/5.0",
-    "Accept": "application/json, text/javascript, */*; q=0.01",
-    "X-Requested-With": "XMLHttpRequest",
-    "Referer": "https://hyundai-ce.live/jsp/Templates/MachinePerformanceReport.jsp"
-
+        "Cookie": "c1=CnFrwVPQYlTyNH9CMCopuRURz1ZIKC3E1MPTTQQUCVMV4WzasMge7Au/gOSBVK4c; JSESSIONID=08927079469605A37ECA0A67DA3AB556; AWSELB=A1374585027AECE6E1999905DCA119937B811FE2EEC22DE61210FFA4B37CB8D8B77C27C36B3E4EF67688B7B67A37E592CB9C63DF620D0F3F9DFC96FAFB9EF906057FF5D3868F74A5865066DE92B0AD63D58C712AB1",
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json, text/javascript, */*; q=0.01",
+        "X-Requested-With": "XMLHttpRequest",
+        "Referer": "https://hyundai-ce.live/jsp/Templates/MachinePerformanceReport.jsp"
     }
 
-    # 👉 Add all your machines here
-     sheet_data = get_sheet_data()
+    # Real machine vehicle IDs
+    vehicle_mapping = {
+        "HYNDN635EE0069980": 43261,
+        "HYNDN635CE0069981": 43262,
+        "HYNDN635VE0071027": 43263,
+        "HYNDN635CE0071026": 43264,
+        "HYNDN635EE0071048": 43265,
+        "HYNDN635CE0071049": 43266,
+        "HYNDE6M4CE0060226": 43267,
+        "HYNDE6M4VE0060227": 43268,
+        "HYNDE6M4AE0060226": 43269,
+        "HYNDE6M4VE0060275": 43270
+    }
 
-     machines = {}
+    sheet_data = get_sheet_data()
 
-     vehicle_mapping = {
-    "HYNDN635EE0069980": 43261,
-    "HYNDN635CE0069981": 43262,
-    "HYNDN635VE0071027": 43263,
-    "HYNDN635CE0071026": 43264,
-    "HYNDN635EE0071048": 43265,
-    "HYNDN635CE0071049": 43266,
-    "HYNDE6M4CE0060226": 43267,
-    "HYNDE6M4VE0060227": 43268,
-    "HYNDE6M4AE0060226": 43269,
-    "HYNDE6M4VE0060275": 43270
-}
+    results = []
 
-for row in sheet_data:
-    machine_id = row["Machine ID"]
+    for row in sheet_data:
 
-    if machine_id in vehicle_mapping:
-        machines[machine_id] = vehicle_mapping[machine_id]
+        machine_id = row["Machine ID"]
+        pc_no = row["PC No"]
 
-    results = {}
+        last_service = row["Last Service Done At"]
 
-    for machine_id, vehicle_id in machines.items():
+        if machine_id not in vehicle_mapping:
+            continue
+
+        vehicle_id = vehicle_mapping[machine_id]
+
         params = {
             "orgId": "126513",
             "vehicleId": vehicle_id,
@@ -67,54 +75,130 @@ for row in sheet_data:
         }
 
         try:
-            response = requests.post(url, data=params, headers=headers, timeout=20)
 
-            # ✅ Check HTTP response
+            response = requests.post(
+                url,
+                data=params,
+                headers=headers,
+                timeout=20
+            )
+
             if response.status_code != 200:
-                results[machine_id] = f"HTTP Error {response.status_code}"
+
+                results.append({
+                    "PC No": pc_no,
+                    "Machine ID": machine_id,
+                    "Status": f"HTTP Error {response.status_code}"
+                })
+
                 continue
 
-            # ✅ Safe JSON parsing
             if not response.text.startswith("{"):
-                results[machine_id] = "Invalid response (cookie expired?)"
+
+                results.append({
+                    "PC No": pc_no,
+                    "Machine ID": machine_id,
+                    "Status": "Invalid response"
+                })
+
                 continue
 
             json_data = response.json()
+
             data = json_data.get("data", [])
 
             if not data:
-                results[machine_id] = "No data"
+
+                results.append({
+                    "PC No": pc_no,
+                    "Machine ID": machine_id,
+                    "Status": "No data"
+                })
+
                 continue
 
-            # ✅ Extract latest hour meter
-            latest_found = False
-            for row in reversed(data):
-                hm = row.get("HourMeter")
-                if hm:
-                    try:
-                        h, m = hm.split(":")
-                        results[machine_id] = round(float(h) + float(m)/60, 2)
-                        latest_found = True
-                        break
-                    except:
-                        continue
+            current_hours = None
 
-            if not latest_found:
-                results[machine_id] = "No valid hour meter"
+            for item in reversed(data):
+
+                hm = item.get("HourMeter")
+
+                if hm:
+
+                    h, m = hm.split(":")
+
+                    current_hours = round(
+                        float(h) + float(m) / 60,
+                        2
+                    )
+
+                    break
+
+            if current_hours is None:
+
+                results.append({
+                    "PC No": pc_no,
+                    "Machine ID": machine_id,
+                    "Status": "No valid hour meter"
+                })
+
+                continue
+
+            # Service calculations
+            last_service = float(last_service) if last_service else 0
+
+            next_service_due = last_service + 500
+
+            remaining_hours = round(
+                next_service_due - current_hours,
+                2
+            )
+
+            # Status logic
+            if remaining_hours <= 0:
+                status = "OVERDUE"
+
+            elif remaining_hours <= 50:
+                status = "DUE SOON"
+
+            else:
+                status = "OK"
+
+            results.append({
+                "PC No": pc_no,
+                "Machine ID": machine_id,
+                "Current Hours": current_hours,
+                "Last Service Done At": last_service,
+                "Next Service Due": next_service_due,
+                "Remaining Hours": remaining_hours,
+                "Status": status
+            })
 
         except requests.exceptions.Timeout:
-            results[machine_id] = "Timeout"
+
+            results.append({
+                "PC No": pc_no,
+                "Machine ID": machine_id,
+                "Status": "Timeout"
+            })
+
         except Exception as e:
-            results[machine_id] = str(e)
+
+            results.append({
+                "PC No": pc_no,
+                "Machine ID": machine_id,
+                "Status": str(e)
+            })
 
     return results
 
 
 @app.route("/")
 def home():
-    return get_sheet_data()
+
+    return jsonify(scrape_hitrack())
 
 
-# Required for Render
 if __name__ == "__main__":
+
     app.run(host="0.0.0.0", port=10000)
