@@ -1,13 +1,7 @@
-# Clean Working app.py
-
-```python
 from flask import Flask, render_template_string
 import requests
 import csv
 from io import StringIO
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 
 app = Flask(__name__)
 
@@ -18,15 +12,8 @@ app = Flask(__name__)
 SHEET_ID = "1EW68VrSfyzaD9UBhWORQe63QOwlz9QLfvQBWx1yWjzI"
 
 BOT_TOKEN = "8926186497:AAFxCR4OjSpIkRLI1EXtAPiS8yPkVZblEvQ"
+
 CHAT_ID = "1188618378"
-
-EMAIL_SENDER = "Nikhilsingireddy@gmail.com"
-EMAIL_PASSWORD = "zvgzrcctehmrifrq"
-
-EMAIL_RECEIVERS = [
-    "Nikhilsingireddy@gmail.com",
-    "masterdrillershyderabad@gmail.com"
-]
 
 # ====================================
 # TELEGRAM
@@ -43,44 +30,6 @@ def send_telegram_message(message):
     }
 
     requests.post(url, data=payload)
-
-
-# ====================================
-# EMAIL
-# ====================================
-
-
-def send_email(subject, body):
-
-    try:
-
-        msg = MIMEMultipart()
-
-        msg['From'] = EMAIL_SENDER
-        msg['To'] = ", ".join(EMAIL_RECEIVERS)
-        msg['Subject'] = subject
-
-        msg.attach(MIMEText(body, 'plain'))
-
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-
-        server.login(
-            EMAIL_SENDER,
-            EMAIL_PASSWORD
-        )
-
-        server.sendmail(
-            EMAIL_SENDER,
-            EMAIL_RECEIVERS,
-            msg.as_string()
-        )
-
-        server.quit()
-
-    except Exception as e:
-
-        print(e)
 
 
 # ====================================
@@ -102,7 +51,7 @@ def get_sheet_data():
 
 
 # ====================================
-# SCRAPER
+# HYUNDAI SCRAPER
 # ====================================
 
 
@@ -137,11 +86,11 @@ def scrape_hitrack():
 
     for row in sheet_data:
 
-        machine_id = row['Machine ID']
-        pc_no = row['PC No']
+        machine_id = row["Machine ID"]
+        pc_no = row["PC No"]
 
         try:
-            last_service = float(row['Last Service Done At'])
+            last_service = float(row["Last Service Done At"])
         except:
             last_service = 0
 
@@ -228,7 +177,7 @@ def scrape_hitrack():
     }
 
     results.sort(
-        key=lambda x: status_order.get(x['Status'], 99)
+        key=lambda x: status_order.get(x["Status"], 99)
     )
 
     return results
@@ -239,21 +188,21 @@ def scrape_hitrack():
 # ====================================
 
 
-@app.route('/')
+@app.route("/")
 def home():
 
     data = scrape_hitrack()
 
     overdue_count = len([
-        x for x in data if x['Status'] == 'OVERDUE'
+        x for x in data if x["Status"] == "OVERDUE"
     ])
 
     due_soon_count = len([
-        x for x in data if x['Status'] == 'DUE SOON'
+        x for x in data if x["Status"] == "DUE SOON"
     ])
 
     ok_count = len([
-        x for x in data if x['Status'] == 'OK'
+        x for x in data if x["Status"] == "OK"
     ])
 
     html = """
@@ -370,7 +319,7 @@ def home():
         </div>
 
         <button onclick="window.location.href='/send-alert'">
-            Send Telegram + Email Alert
+            Send Telegram Alert
         </button>
 
         <table>
@@ -427,11 +376,11 @@ def home():
 
 
 # ====================================
-# ALERT ROUTE
+# TELEGRAM ALERT
 # ====================================
 
 
-@app.route('/send-alert')
+@app.route("/send-alert")
 def send_alert():
 
     data = scrape_hitrack()
@@ -441,13 +390,13 @@ def send_alert():
 
     for row in data:
 
-        if row['Status'] == 'OVERDUE':
+        if row["Status"] == "OVERDUE":
 
             overdue.append(
                 f"🔴 {row['PC No']} → {row['Remaining Hours']} hrs"
             )
 
-        elif row['Status'] == 'DUE SOON':
+        elif row["Status"] == "DUE SOON":
 
             due_soon.append(
                 f"🟡 {row['PC No']} → {row['Remaining Hours']} hrs left"
@@ -465,7 +414,6 @@ def send_alert():
 
         message += "DUE SOON:\n"
         message += "\n".join(due_soon)
-        message += "\n\n"
 
     if not overdue and not due_soon:
 
@@ -473,14 +421,9 @@ def send_alert():
 
     send_telegram_message(message)
 
-    send_email(
-        "MASTERS PC Service Monitor Dashboard Alert",
-        message
-    )
-
-    return "Telegram and Email alerts sent successfully"
+    return "Telegram alert sent successfully"
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
-    app.run(host='0.0.0.0', port=10000)
+    app.run(host="0.0.0.0", port=10000)
