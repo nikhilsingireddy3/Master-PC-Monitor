@@ -13,7 +13,10 @@ SHEET_ID = "1EW68VrSfyzaD9UBhWORQe63QOwlz9QLfvQBWx1yWjzI"
 
 BOT_TOKEN = "8926186497:AAFxCR4OjSpIkRLI1EXtAPiS8yPkVZblEvQ"
 
-CHAT_ID = "1188618378"
+CHAT_IDS = [
+    "1188618378",
+    "8615932622"
+]
 
 # ====================================
 # TELEGRAM
@@ -22,14 +25,26 @@ CHAT_ID = "1188618378"
 
 def send_telegram_message(message):
 
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    try:
 
-    payload = {
-        "chat_id": CHAT_ID,
-        "text": message
-    }
+        for chat_id in CHAT_IDS:
 
-    requests.post(url, data=payload)
+            url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+
+            payload = {
+                "chat_id": chat_id,
+                "text": message
+            }
+
+            requests.post(
+                url,
+                data=payload,
+                timeout=10
+            )
+
+    except Exception as e:
+
+        print(e)
 
 
 # ====================================
@@ -41,7 +56,10 @@ def get_sheet_data():
 
     url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv"
 
-    response = requests.get(url)
+    response = requests.get(
+        url,
+        timeout=10
+    )
 
     csv_data = response.text
 
@@ -90,7 +108,9 @@ def scrape_hitrack():
         pc_no = row["PC No"]
 
         try:
-            last_service = float(row["Last Service Done At"])
+            last_service = float(
+                row["Last Service Done At"]
+            )
         except:
             last_service = 0
 
@@ -116,12 +136,15 @@ def scrape_hitrack():
                 url,
                 data=params,
                 headers=headers,
-                timeout=20
+                timeout=10
             )
 
             json_data = response.json()
 
-            data = json_data.get("data", [])
+            data = json_data.get(
+                "data",
+                []
+            )
 
             current_hours = 0
 
@@ -140,7 +163,9 @@ def scrape_hitrack():
 
                     break
 
-            next_service_due = last_service + 500
+            next_service_due = (
+                last_service + 500
+            )
 
             remaining_hours = round(
                 next_service_due - current_hours,
@@ -148,21 +173,31 @@ def scrape_hitrack():
             )
 
             if remaining_hours <= 0:
+
                 status = "OVERDUE"
 
             elif remaining_hours <= 50:
+
                 status = "DUE SOON"
 
             else:
+
                 status = "OK"
 
             results.append({
+
                 "PC No": pc_no,
+
                 "Machine ID": machine_id,
+
                 "Current Hours": current_hours,
+
                 "Last Service Done At": last_service,
+
                 "Next Service Due": next_service_due,
+
                 "Remaining Hours": remaining_hours,
+
                 "Status": status
             })
 
@@ -177,7 +212,10 @@ def scrape_hitrack():
     }
 
     results.sort(
-        key=lambda x: status_order.get(x["Status"], 99)
+        key=lambda x: status_order.get(
+            x["Status"],
+            99
+        )
     )
 
     return results
@@ -194,15 +232,18 @@ def home():
     data = scrape_hitrack()
 
     overdue_count = len([
-        x for x in data if x["Status"] == "OVERDUE"
+        x for x in data
+        if x["Status"] == "OVERDUE"
     ])
 
     due_soon_count = len([
-        x for x in data if x["Status"] == "DUE SOON"
+        x for x in data
+        if x["Status"] == "DUE SOON"
     ])
 
     ok_count = len([
-        x for x in data if x["Status"] == "OK"
+        x for x in data
+        if x["Status"] == "OK"
     ])
 
     html = """
@@ -211,7 +252,9 @@ def home():
 
     <head>
 
-        <title>MASTERS PC Service Monitor Dashboard</title>
+        <title>
+            MASTERS PC Service Monitor Dashboard
+        </title>
 
         <meta http-equiv="refresh" content="300">
 
@@ -297,7 +340,9 @@ def home():
 
     <body>
 
-        <h1>MASTERS PC Service Monitor Dashboard</h1>
+        <h1>
+            MASTERS PC Service Monitor Dashboard
+        </h1>
 
         <div class="summary">
 
@@ -319,7 +364,9 @@ def home():
         </div>
 
         <button onclick="window.location.href='/send-alert'">
+
             Send Telegram Alert
+
         </button>
 
         <table>
@@ -347,11 +394,17 @@ def home():
             ">
 
                 <td>{{ row['PC No'] }}</td>
+
                 <td>{{ row['Machine ID'] }}</td>
+
                 <td>{{ row['Current Hours'] }}</td>
+
                 <td>{{ row['Last Service Done At'] }}</td>
+
                 <td>{{ row['Next Service Due'] }}</td>
+
                 <td>{{ row['Remaining Hours'] }}</td>
+
                 <td>{{ row['Status'] }}</td>
 
             </tr>
@@ -386,6 +439,7 @@ def send_alert():
     data = scrape_hitrack()
 
     overdue = []
+
     due_soon = []
 
     for row in data:
@@ -393,31 +447,42 @@ def send_alert():
         if row["Status"] == "OVERDUE":
 
             overdue.append(
-                f"🔴 {row['PC No']} → {row['Remaining Hours']} hrs"
+                f"🔴 {row['PC No']} → "
+                f"{row['Remaining Hours']} hrs"
             )
 
         elif row["Status"] == "DUE SOON":
 
             due_soon.append(
-                f"🟡 {row['PC No']} → {row['Remaining Hours']} hrs left"
+                f"🟡 {row['PC No']} → "
+                f"{row['Remaining Hours']} hrs left"
             )
 
-    message = "🚨 MASTERS PC Service Monitor Dashboard\n\n"
+    message = (
+        "🚨 MASTERS PC Service "
+        "Monitor Dashboard\n\n"
+    )
 
     if overdue:
 
         message += "OVERDUE:\n"
+
         message += "\n".join(overdue)
+
         message += "\n\n"
 
     if due_soon:
 
         message += "DUE SOON:\n"
+
         message += "\n".join(due_soon)
 
     if not overdue and not due_soon:
 
-        message += "✅ All machines operating normally"
+        message += (
+            "✅ All machines "
+            "operating normally"
+        )
 
     send_telegram_message(message)
 
@@ -426,4 +491,7 @@ def send_alert():
 
 if __name__ == "__main__":
 
-    app.run(host="0.0.0.0", port=10000)
+    app.run(
+        host="0.0.0.0",
+        port=10000
+    )
