@@ -1,4 +1,4 @@
-from flask import Flask, render_template_string
+from flask import Flask, render_template_string, send_from_directory
 import requests
 import csv
 from io import StringIO
@@ -17,6 +17,16 @@ CHAT_IDS = [
     "1188618378",
     "8615932622"
 ]
+
+# ====================================
+# BACKGROUND IMAGE
+# ====================================
+
+
+@app.route('/background.jpeg')
+def background():
+    return send_from_directory('.', 'background.jpeg')
+
 
 # ====================================
 # TELEGRAM
@@ -261,77 +271,157 @@ def home():
         <style>
 
             body {
+
                 font-family: Arial;
+
                 padding: 20px;
-                background-color: #f4f4f4;
+
+                background-image: url('/background.jpeg');
+
+                background-size: cover;
+
+                background-position: center;
+
+                background-attachment: fixed;
+
+                color: white;
+            }
+
+            body::before {
+
+                content: "";
+
+                position: fixed;
+
+                top: 0;
+                left: 0;
+
+                width: 100%;
+                height: 100%;
+
+                background: rgba(0,0,0,0.55);
+
+                z-index: -1;
             }
 
             .summary {
+
                 display: flex;
+
                 gap: 20px;
+
                 margin-bottom: 20px;
             }
 
             .card {
+
                 padding: 20px;
-                border-radius: 8px;
+
+                border-radius: 12px;
+
                 color: white;
+
                 font-size: 20px;
+
                 font-weight: bold;
+
                 width: 180px;
+
                 text-align: center;
+
+                backdrop-filter: blur(10px);
+
+                background: rgba(255,255,255,0.15);
+
+                border: 1px solid rgba(255,255,255,0.2);
+
+                box-shadow: 0 4px 20px rgba(0,0,0,0.4);
             }
 
             .red {
-                background: #dc3545;
+                background: rgba(220,53,69,0.8);
             }
 
             .yellow {
-                background: #ffc107;
+                background: rgba(255,193,7,0.8);
                 color: black;
             }
 
             .green {
-                background: #28a745;
+                background: rgba(40,167,69,0.8);
             }
 
             table {
+
                 width: 100%;
+
                 border-collapse: collapse;
-                background: white;
+
+                background: rgba(255,255,255,0.12);
+
+                backdrop-filter: blur(12px);
+
+                border-radius: 12px;
+
+                overflow: hidden;
             }
 
             th, td {
-                border: 1px solid #ddd;
-                padding: 10px;
+
+                border: 1px solid rgba(255,255,255,0.15);
+
+                padding: 12px;
+
                 text-align: center;
+
+                color: white;
             }
 
             th {
-                background: #333;
+
+                background: rgba(0,0,0,0.7);
+
                 color: white;
             }
 
             .OK {
-                background-color: #d4edda;
+                background-color: rgba(40,167,69,0.25);
             }
 
             .DUE {
-                background-color: #fff3cd;
+                background-color: rgba(255,193,7,0.25);
             }
 
             .OVERDUE {
-                background-color: #f8d7da;
+                background-color: rgba(220,53,69,0.25);
             }
 
             button {
+
                 padding: 12px 18px;
+
                 background: #007bff;
+
                 color: white;
+
                 border: none;
-                border-radius: 5px;
+
+                border-radius: 8px;
+
                 margin-bottom: 20px;
+
                 cursor: pointer;
+
+                font-size: 15px;
+
+                font-weight: bold;
+
+                box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            }
+
+            h1 {
+
+                text-shadow: 2px 2px 8px black;
             }
 
         </style>
