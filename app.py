@@ -550,6 +550,24 @@ def home():
 
 
 # ====================================
+# TEST GOOGLE SHEET
+# ====================================
+
+@app.route("/test-sheet")
+def test_sheet():
+
+    try:
+
+        value = sheet.cell(2, 1).value
+
+        return f"Google Sheet Connected ✅<br><br>{value}"
+
+    except Exception as e:
+
+        return f"Error: {str(e)}"
+
+
+# ====================================
 # TELEGRAM ALERT
 # ====================================
 
