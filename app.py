@@ -3,7 +3,7 @@ import requests
 import csv
 import gspread
 from io import StringIO
-
+from datetime import datetime
 from google.oauth2.service_account import Credentials
 
 SCOPES = [
@@ -574,7 +574,53 @@ def test_sheet():
     except Exception as e:
 
         return f"Error: {str(e)}"
+@app.route("/mark-service/<row_id>")
+def mark_service(row_id):
 
+    try:
+
+        row_number = int(row_id) + 1
+
+        current_hours = sheet.cell(row_number, 3).value
+        pc_no = sheet.cell(row_number, 1).value
+        machine_id = sheet.cell(row_number, 2).value
+
+        # Update Last Service Done At (Column D)
+        sheet.update_cell(
+            row_number,
+            4,
+            current_hours
+        )
+
+        # Service History tab
+        history = client.open_by_key(
+            "1EW68VrSfyzaD9UBhWORQe63QOwlz9QLfvQBWx1yWjzI"
+        ).worksheet("Service History")
+
+        from datetime import datetime
+
+        history.append_row([
+            datetime.now().strftime("%d-%b-%Y %H:%M"),
+            pc_no,
+            machine_id,
+            current_hours
+        ])
+
+        send_telegram_message(
+            f"✅ Service Recorded\n\n"
+            f"{pc_no}\n"
+            f"{machine_id}\n"
+            f"Hours: {current_hours}"
+        )
+
+        return """
+        <h2>Service Recorded Successfully</h2>
+        <a href="/">Return to Dashboard</a>
+        """
+
+    except Exception as e:
+
+        return f"Error: {str(e)}"
 
 # ====================================
 # TELEGRAM ALERT
