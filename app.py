@@ -104,10 +104,10 @@ def scrape_hitrack():
         "HYNDN635CE0071049": 42006,
         "HYNDE6M4CE0060226": 43261,
         "HYNDE6M4VE0060227": 43258,
-        "HYNDE6M4AE0060226": 43261,
+        "HYNDE6M4AE0060276": 43392,
         "HYNDE6M4VE0060275": 43391
     }
-
+    
     sheet_data = get_sheet_data()
 
     results = []
