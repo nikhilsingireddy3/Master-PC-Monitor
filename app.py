@@ -226,7 +226,7 @@ def scrape_hitrack():
                 status = "OK"
 
             results.append({
-
+                "Row ID": row["Row ID"],
                 "PC No": pc_no,
 
                 "Machine ID": machine_id,
@@ -240,6 +240,7 @@ def scrape_hitrack():
                 "Remaining Hours": remaining_hours,
 
                 "Status": status
+                
             })
 
         except Exception as e:
@@ -500,6 +501,7 @@ def home():
                 <th>Next Due</th>
                 <th>Remaining</th>
                 <th>Status</th>
+                <th>Action</th>
             </tr>
 
             {% for row in data %}
@@ -527,6 +529,13 @@ def home():
                 <td>{{ row['Remaining Hours'] }}</td>
 
                 <td>{{ row['Status'] }}</td>
+                <td>
+                    <a href="/mark-service/{{ row['Row ID'] }}">
+                        <button>
+                            Mark Service Done
+                        </button>
+                    </a>
+                </td>
 
             </tr>
 
