@@ -1,3 +1,29 @@
+import gspread
+from google.oauth2.service_account import Credentials
+
+SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
+
+creds = Credentials.from_service_account_file(
+    "/etc/secrets/credentials.json",
+    scopes=SCOPES
+)
+
+client = gspread.authorize(creds)
+
+sheet = client.open_by_key(
+    "1EW68VrSfyzaD9UBhWORQe63QOwlz9QLfvQBWx1yWjzI"
+).sheet1
+
+@app.route("/test-sheet")
+def test_sheet():
+    try:
+        value = sheet.cell(2, 1).value
+        return f"Google Sheet Connected ✅<br><br>Value: {value}"
+    except Exception as e:
+        return f"Error: {str(e)}"
 from flask import Flask, render_template_string, send_from_directory
 import requests
 import csv
