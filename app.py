@@ -1,4 +1,9 @@
 from flask import Flask, render_template_string, send_from_directory
+import time
+
+CACHE_DATA = []
+CACHE_TIME = 0
+CACHE_DURATION = 300
 import requests
 import csv
 import gspread
@@ -116,6 +121,14 @@ def get_sheet_data():
 
 def scrape_hitrack():
 
+    global CACHE_DATA, CACHE_TIME
+
+    if (
+        CACHE_DATA and
+        time.time() - CACHE_TIME < CACHE_DURATION
+    ):
+        return CACHE_DATA
+
     url = "https://hyundai-ce.live/MachinePerformanceReport/MachinePerformanceReportGridView"
 
     headers = {
@@ -177,7 +190,7 @@ def scrape_hitrack():
                 url,
                 data=params,
                 headers=headers,
-                timeout=10
+                timeout=5
             )
 
             json_data = response.json()
@@ -259,7 +272,8 @@ def scrape_hitrack():
             99
         )
     )
-
+    CACHE_DATA = results
+    CACHE_TIME = time.time()
     return results
 
 
@@ -598,7 +612,7 @@ def mark_service(row_id):
             "1EW68VrSfyzaD9UBhWORQe63QOwlz9QLfvQBWx1yWjzI"
         ).worksheet("Service History")
 
-        from datetime import datetime
+        
 
         history.append_row([
             datetime.now().strftime("%d-%b-%Y %H:%M"),
