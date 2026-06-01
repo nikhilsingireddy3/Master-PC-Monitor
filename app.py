@@ -627,6 +627,9 @@ def mark_service(row_id):
 # ====================================
 
 
+
+
+
 @app.route("/send-alert")
 def send_alert():
 
