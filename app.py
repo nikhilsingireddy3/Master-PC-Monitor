@@ -615,8 +615,10 @@ def mark_service(row_id):
         )
 
         return """
-        <h2>Service Recorded Successfully</h2>
-        <a href="/">Return to Dashboard</a>
+        <h2>✅ Service Recorded Successfully</h2>
+        <script>
+        window.location.href='/';
+        </script>
         """
 
     except Exception as e:
