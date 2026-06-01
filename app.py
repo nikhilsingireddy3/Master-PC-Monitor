@@ -572,8 +572,9 @@ def test_sheet():
         return f"Google Sheet Connected ✅<br><br>{value}"
 
     except Exception as e:
-
         return f"Error: {str(e)}"
+
+
 @app.route("/mark-service/<row_id>")
 def mark_service(row_id):
 
